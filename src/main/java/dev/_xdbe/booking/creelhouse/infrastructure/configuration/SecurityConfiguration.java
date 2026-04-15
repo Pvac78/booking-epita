@@ -1,21 +1,15 @@
-package dev._xdbe.booking.creelhouse.infrastructure.config;
+package dev._xdbe.booking.creelhouse.infrastructure.configuration;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.session.web.http.CookieSerializer;
-import org.springframework.session.web.http.DefaultCookieSerializer;
+
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
@@ -26,15 +20,10 @@ public class SecurityConfiguration {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
             .authorizeHttpRequests(auth -> auth
-                // Step 4a: add access control
-                // ...
-                // Step 4a: end
+                .requestMatchers("/dashboard").hasRole("ADMIN")
                 .anyRequest().permitAll()
             )
-            // Step 4b: Add login form
-            // ...
-            // Step 4b: End of login form configuration
-            
+            .formLogin(withDefaults())
             .csrf((csrf) -> csrf
                 .ignoringRequestMatchers("/h2-console/**")
             )
@@ -46,8 +35,20 @@ public class SecurityConfiguration {
             .build();
     }
 
-    // Step 3: add InMemoryUserDetailsManager
-    // ...
-    // Step 3: end
+    @Bean
+    public UserDetailsService userDetailsService() {
+        UserDetails admin = User.builder()
+            .username("admin")
+            .password("{bcrypt}$2b$12$5emoU0qNRuN7okDeSSgRd.jbBabNXm5t4G5.UKRmZe9gyPPQPe4Fi")
+            .roles("ADMIN")
+            .build();
 
+        UserDetails guest = User.builder()
+            .username("guest")
+            .password("{bcrypt}$2b$12$lBZ/u5nGAdE/.hj/cdPKQOTIv/90ENMiNxdA7H0YQlXBE4cYfHdpu")
+            .roles("GUEST")
+            .build();
+
+        return new InMemoryUserDetailsManager(admin, guest);
+    }
 }
