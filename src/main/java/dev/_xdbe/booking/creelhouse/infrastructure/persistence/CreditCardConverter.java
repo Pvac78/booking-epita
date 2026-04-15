@@ -22,16 +22,28 @@ public class CreditCardConverter implements AttributeConverter<String, String> {
 
     @Override
     public String convertToDatabaseColumn(String attribute) {
-        // Step 7a: Encrypt the PAN before storing it in the database
-        return attribute;
-        // Step 7a: End of PAN encryption
+        if (attribute == null) {
+            return null;
+        }
+        try {
+            return CryptographyHelper.encryptData(attribute);
+        } catch (Exception e) {
+            throw new RuntimeException("Error encrypting credit card", e);
+        }
     }
 
     @Override
     public String convertToEntityAttribute(String dbData) {
-        // Step 7b: Decrypt the PAN when reading it from the database
-        String pan = dbData;
-        // Step 7b: End of PAN decryption
+        if (dbData == null) {
+            return null;
+        }
+        String pan;
+        try {
+            pan = CryptographyHelper.decryptData(dbData);
+        } catch (Exception e) {
+            throw new RuntimeException("Error decrypting credit card", e);
+        }
+        
         String maskedPanString = panMasking(pan);
         return maskedPanString;
     }
