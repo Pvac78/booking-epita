@@ -1,9 +1,9 @@
----
-name: PR Security Check
+name: security
 
 on:
-  pull_request:
-    branches: [ "main" ]
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
 
 permissions:
   actions: read
@@ -11,40 +11,48 @@ permissions:
   contents: read
 
 jobs:
-  dependencies-pr:
+  DependenciesAnalysis:
+    name: DependenciesAnalysis
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PR code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: run osv-scanner
-        uses: google/osv-scanner-action/osv-scanner-action@7222d1c7ee4f96d71d883e0d3c603f1e1705eca9
+      - name: Run OSV Scanner
+        uses: google/osv-scanner-action/osv-scanner-action@c51854704019a247608d928f370c98740469d4b5
         with:
           scan-args: |-
             --format sarif
-            --output DependenciesAnalysisPR.sarif
+            --output DependenciesAnalysisFull.sarif
             ./
         continue-on-error: true
 
-      - name: upload sarif
-        uses: github/codeql-action/upload-sarif@v4
+      - name: Upload OSV SARIF results
+        uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: DependenciesAnalysisPR.sarif
+          sarif_file: DependenciesAnalysisFull.sarif
+          category: osv-scanner
 
-  source-code-pr:
+  SourceCodeAnalysis:
+    name: SourceCodeAnalysis
     runs-on: ubuntu-latest
     container:
-      image: semgrep/semgrep@sha256:326e5f41cc972bb423b764a14febbb62bbad29ee1c01820805d077dd868fea48
+      image: returntocorp/semgrep@sha256:0a014c440663e466a79401c24e0cc8c63e18975cd9eb82dca62d0826b41a359a
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v4
 
-      - name: run semgrep differential
-        run: semgrep ci --baseline-commit ${{ github.event.pull_request.base.sha }} --config .semgrep
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run Semgrep
+        run: |
+          semgrep \
+            --config .semgrep/ \
+            --sarif \
+            --output SourceCodeAnalysisFull.sarif \
+            .
         continue-on-error: true
+
+      - name: Upload Semgrep SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: SourceCodeAnalysisFull.sarif
+          category: semgrep
