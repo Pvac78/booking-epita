@@ -17,7 +17,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # --- Semgrep Quotidien ---
+      # --- Semgrep Quotidien pour de vrai---
       - name: run semgrep
         uses: semgrep/semgrep-action@v1
         with:
