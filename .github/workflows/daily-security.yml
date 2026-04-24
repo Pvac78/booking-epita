@@ -1,52 +1,36 @@
-name: PR Security Check
+name: security
 
-# Se déclenche uniquement lors d'une Pull Request
-on: 
-  pull_request:
-    branches: [ "main" ]
+on:
+  schedule:
+    - cron: '0 0 * * *' # Tous les jours à minuit (Requis pour le "Daily")
+  workflow_dispatch:
+
+permissions:
+  # Required to upload SARIF file to CodeQL.
+  actions: read
+  # Require writing security events to upload SARIF file
+  security-events: write
+  # to fetch code (actions/checkout)
+  contents: read
 
 jobs:
-  # Job 1 : Analyse des dépendances (Differential OSV-Scanner)
-  dependencies-analysis:
-    name: Dependencies Analysis
+  analysis:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PR code (After PR)
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Run OSV Scanner (After PR)
-        uses: google/osv-scanner-action/osv-scanner-action@v1.9.0
+      # --- 1. Analyse du code avec Semgrep ---
+      - name: run semgrep
+        uses: returntocorp/semgrep-action@v1
         with:
-          scan-args: |-
-            --format sarif
-            --output osv-after.sarif
-            ./
+          config: "p/default"
+          generateSarif: "1"
         continue-on-error: true
 
-      - name: Checkout baseline commit
-        run: git checkout ${{ github.event.pull_request.base.sha }}
-
-      - name: Run OSV Scanner (Before PR)
-        uses: google/osv-scanner-action/osv-scanner-action@v1.9.0
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@v3
         with:
-          scan-args: |-
-            --format sarif
-            --output osv-before.sarif
-            ./
+          sarif_file: semgrep.sarif
+          category: semgrep
         continue-on-error: true
-
-      - name: Compare OSV analysis
-        uses: google/osv-scanner-action/osv-reporter-action@v1.9.0
-        with:
-          scan-args: |-
-            --new osv-after.sarif
-            --old osv-before.sarif
-            --output osv-diff.sarif
-
-      - name: Save OSV differential report as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: osv-differential-report
-          path: osv-diff.sarif
