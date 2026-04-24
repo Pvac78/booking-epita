@@ -19,7 +19,7 @@ jobs:
 
       # --- Semgrep Quotidien ---
       - name: run semgrep
-        uses: returntocorp/semgrep-action@v1
+        uses: semgrep/semgrep-action@v1
         with:
           config: "p/default"
           generateSarif: "1"
