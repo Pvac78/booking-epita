@@ -17,9 +17,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # --- Semgrep Quotidien pour de vrai---
+      # --- 1. Semgrep (Analyse du code) ---
       - name: run semgrep
-        uses: semgrep/semgrep-action@v1
+        uses: returntocorp/semgrep-action@v1
         with:
           config: "p/default"
           generateSarif: "1"
@@ -32,7 +32,7 @@ jobs:
           category: semgrep
         continue-on-error: true
 
-      # --- OSV-Scanner Quotidien ---
+      # --- 2. OSV-Scanner (Analyse des dépendances) ---
       - name: run osv-scanner
         uses: google/osv-scanner-action/osv-scanner-action@v1.9.0
         with:
